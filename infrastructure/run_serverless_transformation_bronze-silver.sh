@@ -1,6 +1,6 @@
 # Dataproc serverless bronze-silver
 gcloud dataproc batches submit pyspark \
-  gs://now-news-data-lake/scripts/nowNews-transform-bronze-silver.py \
+  gs://now-news-data-lake/scripts/spark/nowNews-transform-bronze-silver.py \
   --region=us-central1 \
   --batch=nownews-transform-bronze-silver-$(date +%s) \
   --properties spark.executor.instances=4 \
