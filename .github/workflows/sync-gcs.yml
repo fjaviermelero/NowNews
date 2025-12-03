@@ -9,15 +9,20 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # Checkout del repositorio
       - uses: actions/checkout@v2
 
-      # Setup CLI
+      # Autenticación con GCP usando la clave JSON del servicio
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCS_SA_KEY }}
+
+      # Configura gcloud con el proyecto
       - uses: google-github-actions/setup-gcloud@v1
         with:
-          service_account_email: ${{ secrets.GCS_SA_EMAIL }}
-          service_account_key: ${{ secrets.GCS_SA_KEY }}
           project_id: your-gcp-project-id
 
-      - name: Sync repository to GCS
+      # Sincroniza solo la carpeta scripts
+      - name: Sync scripts to GCS
         run: |
-          gsutil -m rsync -d -r --exclude ".git/**" --exclude ".github/**" . gs://now-news-data-lake/scripts
+          gsutil -m rsync -d -r ./scripts gs://now-news-data-lake/scripts
