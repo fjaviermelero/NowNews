@@ -25,4 +25,4 @@ jobs:
       # Sincroniza solo la carpeta scripts
       - name: Sync scripts to GCS
         run: |
-          gsutil -m rsync -d -r . gs://now-news-data-lake/scripts
+            gsutil -m rsync -d -r -x "(\.git|\.github|gha-creds.*\.json)" . gs://now-news-data-lake/scripts
