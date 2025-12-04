@@ -38,12 +38,22 @@ tokenizer = Tokenizer(
 df = tokenizer.transform(df)
 
 #Elimination of stopwords
-stopwords = StopWordsRemover.loadDefaultStopWords('spanish')
+
+route_custom_stopwords = "gs://now-news-data-lake/scripts/spark/stopwords.csv"
+df_stopwords = spark.read.csv(route_stopwords, header=True, sep=";")
+
+custom_stopwords = []
+for row in df_stopwords.collect():
+    custom_stopwords.append(row['stopword'])
+
+default_stopwords = StopWordsRemover.loadDefaultStopWords('spanish')
+
+all_stopwords = list(set(default_stopwords + custom_stopwords))
 
 remover = StopWordsRemover(
     inputCol = 'tokens',
     outputCol = 'tokens_clean',
-    stopWords = stopwords
+    stopWords = all_stopwords
 )
 
 df = remover.transform(df)
