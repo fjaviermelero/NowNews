@@ -40,7 +40,7 @@ df = tokenizer.transform(df)
 #Elimination of stopwords
 
 route_custom_stopwords = "gs://now-news-data-lake/scripts/spark/stopwords.csv"
-df_stopwords = spark.read.csv(route_stopwords, header=True, sep=";")
+df_stopwords = spark.read.csv(route_custom_stopwords, header=True, sep=";")
 
 custom_stopwords = []
 for row in df_stopwords.collect():
