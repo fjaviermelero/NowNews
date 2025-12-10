@@ -4,6 +4,8 @@ from airflow.operators.python import PythonOperator
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from google.cloud import storage
 import requests
 
 # Load credentials
@@ -22,6 +24,20 @@ def call_cloud_function():
     response.raise_for_status()
     print(response.text)  # opcional: loguea la respuesta
     return response.text
+
+
+def load_sql_from_gcs(bucket_name, file_path):
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(file_path)
+    sql = blob.download_as_text()
+    return sql
+
+sql_insert_newspapers = load_sql_from_gcs("now-news-data-lake", "scripts/sql/insert_dim_newspapers.sql")
+sql_insert_topics = load_sql_from_gcs("now-news-data-lake", "scripts/sql/insert_dim_topics.sql")
+sql_insert_fact_newspapers_topic = load_sql_from_gcs("now-news-data-lake", "scripts/sql/insert_fact_newspaper_topic.sql")
+
+
 
 default_args = {
     "owner": "airflow",
@@ -84,5 +100,35 @@ with DAG(
     },
 
     )
+    
+    sql_insert_newspapers = BigQueryInsertJobOperator(
+        task_id="sql_insert_newspapers",
+        configuration={
+            "query": {
+                "query": sql_insert_newspapers,
+                "useLegacySql": False
+            }
+        },
+    )
 
-cloud_function_task >> Bronze_to_Silver_NowNews >> Silver_to_Gold_NowNews
+    sql_insert_topics = BigQueryInsertJobOperator(
+        task_id="sql_insert_topics",
+        configuration={
+            "query": {
+                "query": sql_insert_topics,
+                "useLegacySql": False
+            }
+        },
+    )
+
+    sql_insert_fact_newspapers_topic = BigQueryInsertJobOperator(
+        task_id="sql_insert_fact_newspapers_topic",
+        configuration={
+            "query": {
+                "query": sql_insert_fact_newspapers_topic,
+                "useLegacySql": False
+            }
+        },
+    )
+
+cloud_function_task >> Bronze_to_Silver_NowNews >> Silver_to_Gold_NowNews >> sql_insert_newspapers >> sql_insert_topics >> sql_insert_fact_newspapers_topic
